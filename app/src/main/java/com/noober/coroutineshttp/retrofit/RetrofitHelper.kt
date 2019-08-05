@@ -17,6 +17,7 @@ class RetrofitHelper {
                 .build()
             val retrofit = Retrofit.Builder().client(client).baseUrl("https://api.github.com/")
                 .addConverterFactory(GsonConverterFactory.create()).build()
+
             return retrofit.create(ApiService::class.java)
         }
     }

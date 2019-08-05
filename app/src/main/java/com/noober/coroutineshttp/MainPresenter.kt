@@ -22,6 +22,15 @@ class MainPresenter : DefaultLifecycleObserver, LifecycleOwner {
         lifecycle.removeObserver(this)
     }
 
+    /**
+     * 打印结果如下：
+     *
+     * MainPresenter: start doHttpRequest:currentThreadName:main
+     * MainPresenter: request doHttpRequest:currentThreadName:DefaultDispatcher-worker-2
+     * MainPresenter: onSuccess doHttpRequest:currentThreadName:main
+     * MainPresenter: UserBean(login=null, id=61097549, node_id=MDEwOlJlcG9zaXRvcnk2MTA5NzU0OQ==, avatar_url=null, gravatar_id=null, url=https://api.github.com/repos/JavaNoober/Album, html_url=https://github.com/JavaNoober/Album, followers_url=null, following_url=null, gists_url=null, starred_url=null, subscriptions_url=null, organizations_url=null, repos_url=null, events_url=https://api.github.com/repos/JavaNoober/Album/events, received_events_url=null, type=null, site_admin=false, name=Album, company=null, blog=null, location=null, email=null, hireable=null, bio=null, public_repos=0, public_gists=0, followers=0, following=0, created_at=2016-06-14T06:28:05Z, updated_at=2016-06-14T06:40:26Z)
+     * MainPresenter: onComplete doHttpRequest:currentThreadName:main
+     */
     fun doHttpRequest() {
         start {
             Log.e(TAG, "start doHttpRequest:currentThreadName:${Thread.currentThread().name}")

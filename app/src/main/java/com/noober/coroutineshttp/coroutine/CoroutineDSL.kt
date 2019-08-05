@@ -23,6 +23,7 @@ internal class CoroutineLifecycleListener(private val deferred: Deferred<*>, pri
 
 /**
  * execute in main thread
+ * @param start doSomeThing first
  */
 infix fun LifecycleOwner.start(start: (() -> Unit)): LifecycleOwner{
     GlobalScope.launch(Main) {
@@ -33,17 +34,32 @@ infix fun LifecycleOwner.start(start: (() -> Unit)): LifecycleOwner{
 
 /**
  * execute in io thread pool
+ * @param loader http request
  */
 infix fun <T> LifecycleOwner.request(loader: suspend () -> T): Deferred<T> {
+    return request(loader)
+}
+
+/**
+ * execute in io thread pool
+ * @param loader http request
+ * @param needAutoCancel need to cancel when activity destroy
+ */
+fun <T> LifecycleOwner.request(loader: suspend () -> T, needAutoCancel: Boolean = true): Deferred<T> {
     val deferred = GlobalScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
         loader()
     }
-    lifecycle.addObserver(CoroutineLifecycleListener(deferred, lifecycle))
+    if(needAutoCancel){
+        lifecycle.addObserver(CoroutineLifecycleListener(deferred, lifecycle))
+    }
     return deferred
 }
 
 /**
  * execute in main thread
+ * @param onSuccess callback for onSuccess
+ * @param onError callback for onError
+ * @param onComplete callback for onComplete
  */
 fun <T> Deferred<T>.then(onSuccess: suspend (T) -> Unit, onError: suspend (String) -> Unit, onComplete: (() -> Unit)? = null): Job {
     return GlobalScope.launch(context = Main) {
