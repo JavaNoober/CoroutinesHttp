@@ -37,7 +37,7 @@ infix fun LifecycleOwner.start(start: (() -> Unit)): LifecycleOwner{
  * @param loader http request
  */
 infix fun <T> LifecycleOwner.request(loader: suspend () -> T): Deferred<T> {
-    return request(loader)
+    return request(loader, true)
 }
 
 /**

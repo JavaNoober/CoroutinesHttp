@@ -1,6 +1,5 @@
 package com.noober.coroutineshttp.retrofit
 
-import java.util.*
 
 class UserBean {
     val login: String? = null
