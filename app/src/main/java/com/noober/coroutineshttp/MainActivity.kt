@@ -4,14 +4,17 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 
 class MainActivity : AppCompatActivity() {
+    private val TAG = "MainActivity"
 
-    private val mainPresenter: MainPresenter by lazy { MainPresenter() }
+    private val mainPresenter: LifecycleMainPresenter by lazy { LifecycleMainPresenter() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         lifecycle.addObserver(mainPresenter)
         mainPresenter.doHttpRequest()
+        mainPresenter.doHttpRequest2()
+        Test().doHttp()
     }
 
     override fun onDestroy() {

@@ -1,81 +1,58 @@
 package com.noober.coroutineshttp.coroutine
 
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.OnLifecycleEvent
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.Main
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeoutException
 
+class Request<T> {
+    lateinit var loader: suspend () -> T
 
-internal class CoroutineLifecycleListener(private val deferred: Deferred<*>, private val lifecycle: Lifecycle): LifecycleObserver {
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    fun cancelCoroutine() {
-        if (deferred.isActive) {
-            deferred.cancel()
-        }
-        lifecycle.removeObserver(this)
+    var start: (() -> Unit)? = null
+
+    var onSuccess: ((T) -> Unit)? = null
+
+    var onError: ((String) -> Unit)? = null
+
+    var onComplete: (() -> Unit)? = null
+
+    var addLifecycle: LifecycleOwner? = null
+
+    fun request() {
+        request(addLifecycle)
     }
-}
 
-/**
- * execute in main thread
- * @param start doSomeThing first
- */
-infix fun LifecycleOwner.start(start: (() -> Unit)): LifecycleOwner{
-    GlobalScope.launch(Main) {
-        start()
-    }
-    return this
-}
+    fun request(addLifecycle: LifecycleOwner?) {
+        GlobalScope.launch(context = Dispatchers.Main) {
+            try {
+                start?.invoke()
 
-/**
- * execute in io thread pool
- * @param loader http request
- */
-infix fun <T> LifecycleOwner.request(loader: suspend () -> T): Deferred<T> {
-    return request(loader, true)
-}
-
-/**
- * execute in io thread pool
- * @param loader http request
- * @param needAutoCancel need to cancel when activity destroy
- */
-fun <T> LifecycleOwner.request(loader: suspend () -> T, needAutoCancel: Boolean = true): Deferred<T> {
-    val deferred = GlobalScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
-        loader()
-    }
-    if(needAutoCancel){
-        lifecycle.addObserver(CoroutineLifecycleListener(deferred, lifecycle))
-    }
-    return deferred
-}
-
-/**
- * execute in main thread
- * @param onSuccess callback for onSuccess
- * @param onError callback for onError
- * @param onComplete callback for onComplete
- */
-fun <T> Deferred<T>.then(onSuccess: suspend (T) -> Unit, onError: suspend (String) -> Unit, onComplete: (() -> Unit)? = null): Job {
-    return GlobalScope.launch(context = Main) {
-        try {
-            val result = this@then.await()
-            onSuccess(result)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            when (e) {
-                is UnknownHostException -> onError("network is error!")
-                is TimeoutException -> onError("network is error!")
-                is SocketTimeoutException -> onError("network is error!")
-                else -> onError("network is error!")
+                val deferred = GlobalScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+                    loader()
+                }
+                addLifecycle?.apply { lifecycle.addObserver(CoroutineLifecycleListener(deferred, lifecycle)) }
+                val result = deferred.await()
+                onSuccess?.invoke(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                when (e) {
+                    is UnknownHostException -> onError?.invoke("network is error!")
+                    is TimeoutException -> onError?.invoke("network is error!")
+                    is SocketTimeoutException -> onError?.invoke("network is error!")
+                    else -> onError?.invoke("network is error!")
+                }
+            } finally {
+                onComplete?.invoke()
             }
-        }finally {
-            onComplete?.invoke()
         }
     }
+}
+
+inline fun <T> request2(buildRequest: Request<T>.() -> Unit) {
+    Request<T>().apply(buildRequest).request()
+}
+
+inline fun <T> LifecycleOwner.request2(buildRequest: Request<T>.() -> Unit) {
+    Request<T>().apply(buildRequest).request(this)
 }
