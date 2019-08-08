@@ -44,6 +44,8 @@ class MainPresenter{
      */
     fun doHttpRequest2() {
         request2<List<UserBean>> {
+            //addLifecycle 来指定依赖的生命周期的对象
+//            addLifecycle = {}
 
             start = {
                 Log.e(TAG, "start doHttpRequest2:currentThreadName:${Thread.currentThread().name}")

@@ -25,9 +25,9 @@ class Request<T> {
 
     fun request(addLifecycle: LifecycleOwner?) {
         GlobalScope.launch(context = Dispatchers.Main) {
-            try {
-                start?.invoke()
 
+            start?.invoke()
+            try {
                 val deferred = GlobalScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
                     loader()
                 }
