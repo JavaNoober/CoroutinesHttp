@@ -27,9 +27,7 @@ internal class CoroutineLifecycleListener(private val deferred: Deferred<*>, pri
  */
 
 infix fun LifecycleOwner.start(start: (() -> Unit)): LifecycleOwner{
-    GlobalScope.launch(Main) {
-        start()
-    }
+    start()
     return this
 }
 

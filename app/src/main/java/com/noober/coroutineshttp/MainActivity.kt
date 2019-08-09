@@ -14,8 +14,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         lifecycle.addObserver(lifecycleMainPresenter)
         lifecycleMainPresenter.doHttpRequest()
-        mainPresenter.doHttpRequest2()
-        Test().doHttp()
+        mainPresenter.doHttpRequest3()
+//        Test().doHttp()
     }
 
     override fun onDestroy() {

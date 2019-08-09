@@ -259,3 +259,225 @@ then方法是对请求结果的处理，方法内传入onSuccess、onError、onC
 ## 总结
 所有的核心代码加起来也不过100行左右，但是就完成了一个安全轻量简便的网络请求操作。因为在这里使用了Lifecycle，其实后续也可以考虑使用配合LiveData，这样更可以达到其他框架难以实现的对数据生命周期的处理。  
 完整的代码已上传至github([CoroutinesHttp](https://github.com/JavaNoober/CoroutinesHttp))，欢迎大家提出更好的建议方法。  
+
+
+## 前言
+[上篇文章（DSL形式的基于retorfit、协程的网络请求封装）](https://juejin.im/post/5d48e757f265da03bf0f29a3)介绍了，如何基于retorfit、协程去开发一个dsl形式的网络请求，但是封装完后的写法并不足够DSL，有童鞋表示看起来还是如rxjava一样的链式请求而已。接下来便封装一个标准的DSL网络请求方式。  
+
+DSL是Domain-specific language(领域特定语言)的缩写，维基百科的定义是指的是专注于某个应用程序领域的计算机语言。  
+这种说法看起来很抽象，其实大家很常用的gradle就是DSL最常用体现，可以看一下android project中的build.gradle:  
+![image](https://raw.githubusercontent.com/JavaNoober/CoroutinesHttp/master/gradleDSL.png)
+
+android{}, dependencies{}这种都是DSL的表现形式，相对于传统的写法更加简洁、表现内容更加明显，如配置文件般的去执行方法，这也是为什么推荐DSL写法的原因。
+
+以下封装的标准DSL请求方式如下：
+
+![image](https://raw.githubusercontent.com/JavaNoober/CoroutinesHttp/master/HTTPDSL.png)
+
+对比之后我们发现可以说是和gradle基本一样，接下来就展示如何封装。
+    
+## request2
+### 分析
+- 首先请求是放在一个request对象内
+- request内包含多个方法loader、start、onSuccess等，作用也很明显就是，不再过多阐述
+
+### 构建request
+
+    class Request<T> {
+        lateinit var loader: suspend () -> T
+    
+        var start: (() -> Unit)? = null
+    
+        var onSuccess: ((T) -> Unit)? = null
+    
+        var onError: ((String) -> Unit)? = null
+    
+        var onComplete: (() -> Unit)? = null
+    
+        var addLifecycle: LifecycleOwner? = null
+    
+        fun request() {
+            request(addLifecycle)
+        }
+    
+        fun request(addLifecycle: LifecycleOwner?) {
+    
+            GlobalScope.launch(context = Dispatchers.Main) {
+    
+                start?.invoke()
+                try {
+                    val deferred = GlobalScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+                        loader()
+                    }
+                    addLifecycle?.apply { lifecycle.addObserver(CoroutineLifecycleListener(deferred, lifecycle)) }
+                    val result = deferred.await()
+                    onSuccess?.invoke(result)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    when (e) {
+                        is UnknownHostException -> onError?.invoke("network is error!")
+                        is TimeoutException -> onError?.invoke("network is error!")
+                        is SocketTimeoutException -> onError?.invoke("network is error!")
+                        else -> onError?.invoke("network is error!")
+                    }
+                } finally {
+                    onComplete?.invoke()
+                }
+            }
+        }
+    }
+    
+Request对象创建好了，里面放入的参数为方法参数，而不是实体类的参数类型，但是现在使用的时候还是需要通过new，才能创建request对象调用其request请求方法，那如何才能直接调用request方法呢，这就需要用到kotlin的扩展函数功能：  
+
+    inline fun <T> request2(buildRequest: Request<T>.() -> Unit) {
+        Request<T>().apply(buildRequest).request()
+    }
+    
+    inline fun <T> LifecycleOwner.request2(buildRequest: Request<T>.() -> Unit) {
+        Request<T>().apply(buildRequest).request(this)
+    }
+加入上面两个方法之后，我们就可以直接调用request方法，进行网络请求了：  
+
+        fun doHttpRequest2() {
+            request2<List<UserBean>> {
+                //addLifecycle 来指定依赖的生命周期的对象
+    //            addLifecycle = {}
+    
+                start = {
+                    Log.e(TAG, "start doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+                }
+    
+                loader = {
+                    Log.e(TAG, "request doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+                    RetrofitHelper.getApi().getUserInfo()
+                }
+    
+                onSuccess = {
+                    Log.e(TAG, "onSuccess doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+                    Log.e(TAG, it[0].toString())
+                }
+    
+                onError = {
+                    Log.e(TAG, "onError doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+                }
+    
+                onComplete = {
+                    Log.e(TAG, "onComplete doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+                }
+            }
+        }
+        
+加入扩展函数之后，这样看起来基本的DSL风格已经有了，但是同gradle对比一看，发现多了一个“=”号，那接下来就想办法去除这个“=”：
+
+修改request如下：  
+
+    class Request<T> {
+        private lateinit var loader: suspend () -> T
+    
+        private var start: (() -> Unit)? = null
+    
+        private var onSuccess: ((T) -> Unit)? = null
+    
+        private var onError: ((String) -> Unit)? = null
+    
+        private var onComplete: (() -> Unit)? = null
+    
+        private var addLifecycle: LifecycleOwner? = null
+    
+    
+        infix fun loader(loader: suspend () -> T){
+            this.loader = loader
+        }
+    
+        infix fun start(start: (() -> Unit)?){
+            this.start = start
+        }
+    
+        infix fun onSuccess(onSuccess: ((T) -> Unit)?){
+            this.onSuccess = onSuccess
+        }
+    
+        infix fun onError(onError: ((String) -> Unit)?){
+            this.onError = onError
+        }
+    
+        infix fun onComplete(onComplete: (() -> Unit)?){
+            this.onComplete = onComplete
+        }
+    
+        infix fun addLifecycle(addLifecycle: LifecycleOwner?){
+            this.addLifecycle = addLifecycle
+        }
+    
+        fun request() {
+            request(addLifecycle)
+        }
+    
+        fun request(addLifecycle: LifecycleOwner?) {
+    
+            GlobalScope.launch(context = Dispatchers.Main) {
+    
+                start?.invoke()
+                try {
+                    val deferred = GlobalScope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+                        loader()
+                    }
+                    addLifecycle?.apply { lifecycle.addObserver(CoroutineLifecycleListener(deferred, lifecycle)) }
+                    val result = deferred.await()
+                    onSuccess?.invoke(result)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    when (e) {
+                        is UnknownHostException -> onError?.invoke("network is error!")
+                        is TimeoutException -> onError?.invoke("network is error!")
+                        is SocketTimeoutException -> onError?.invoke("network is error!")
+                        else -> onError?.invoke("network is error!")
+                    }
+                } finally {
+                    onComplete?.invoke()
+                }
+            }
+        }
+    }
+    
+之所以有“=”，是因为我们把执行的方法当作参数传入的，我们将参数提供一个set方法进行赋值就可以去除“=”，但是调用set方法会出现(),这时我们增加infix字段修饰，这样在set的时候可以直接去除()替换为{}，修改之后调用方法就变成了我们所需要的DSL风格，与gradle如出一辙：  
+
+    /**
+     * 打印结果如下：
+     *
+     * LifecycleMainPresenter: start doHttpRequest:currentThreadName:main
+     * LifecycleMainPresenter: request doHttpRequest:currentThreadName:DefaultDispatcher-worker-2
+     * LifecycleMainPresenter: onSuccess doHttpRequest:currentThreadName:main
+     * LifecycleMainPresenter: UserBean(login=null, id=61097549, node_id=MDEwOlJlcG9zaXRvcnk2MTA5NzU0OQ==, avatar_url=null, gravatar_id=null, url=https://api.github.com/repos/JavaNoober/Album, html_url=https://github.com/JavaNoober/Album, followers_url=null, following_url=null, gists_url=null, starred_url=null, subscriptions_url=null, organizations_url=null, repos_url=null, events_url=https://api.github.com/repos/JavaNoober/Album/events, received_events_url=null, type=null, site_admin=false, name=Album, company=null, blog=null, location=null, email=null, hireable=null, bio=null, public_repos=0, public_gists=0, followers=0, following=0, created_at=2016-06-14T06:28:05Z, updated_at=2016-06-14T06:40:26Z)
+     * LifecycleMainPresenter: onComplete doHttpRequest:currentThreadName:main
+     */
+    fun doHttpRequest2() {
+        request2<List<UserBean>> {
+            start {
+                Log.e(TAG, "start doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+            }
+
+            loader {
+                Log.e(TAG, "request doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+                RetrofitHelper.getApi().getUserInfo()
+            }
+
+            onSuccess {
+                Log.e(TAG, "onSuccess doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+                Log.e(TAG, it[0].toString())
+            }
+
+            onError {
+                Log.e(TAG, "onError doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+            }
+
+            onComplete {
+                Log.e(TAG, "onComplete doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+            }
+        }
+    }
+
+## 总结
+[上篇文章（DSL形式的基于retrofit、协程的网络请求封装）](https://juejin.im/post/5d48e757f265da03bf0f29a3)主要是介绍了如何去封装协程+retrofit的网络请求，这篇则是更加***侧重于封装DSL风格***请求，完整的代码已上传至github([CoroutinesHttp](https://github.com/JavaNoober/CoroutinesHttp))，欢迎大家提出更好的建议方法。  
+
+像使用gradle一样，在kotlin中进行网络请求

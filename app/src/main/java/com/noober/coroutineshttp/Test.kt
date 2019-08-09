@@ -12,21 +12,21 @@ class Test{
 
         request2<List<UserBean>> {
 
-            loader = {
+            loader {
                 Log.e(TAG, "request doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
                 RetrofitHelper.getApi().getUserInfo()
             }
 
-            onSuccess = {
+            onSuccess {
                 Log.e(TAG, "onSuccess doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
                 Log.e(TAG, it[0].toString())
             }
 
-            onError = {
+            onError {
                 Log.e(TAG, "onError doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
 
-            onComplete = {
+            onComplete {
                 Log.e(TAG, "onComplete doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
         }

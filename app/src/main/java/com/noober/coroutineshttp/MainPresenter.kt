@@ -13,7 +13,7 @@ import com.noober.coroutineshttp.retrofit.RetrofitHelper
 import com.noober.coroutineshttp.retrofit.UserBean
 
 class MainPresenter{
-    private val TAG = "LifecycleMainPresenter"
+    private val TAG = "MainPresenter"
     /**
      * 因为该Presenter不是LifecycleOwner，所以封装的链式方法无法使用
      */
@@ -34,6 +34,7 @@ class MainPresenter{
     }
 
     /**
+     * 基本封装之后的写法，接下来可以进一步优化，去掉等于号
      * 打印结果如下：
      *
      * LifecycleMainPresenter: start doHttpRequest:currentThreadName:main
@@ -43,29 +44,58 @@ class MainPresenter{
      * LifecycleMainPresenter: onComplete doHttpRequest:currentThreadName:main
      */
     fun doHttpRequest2() {
+//        request2<List<UserBean>> {
+//            //addLifecycle 来指定依赖的生命周期的对象
+////            addLifecycle = {}
+//
+//            start = {
+//                Log.e(TAG, "start doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+//            }
+//
+//            loader = {
+//                Log.e(TAG, "request doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+//                RetrofitHelper.getApi().getUserInfo()
+//            }
+//
+//            onSuccess = {
+//                Log.e(TAG, "onSuccess doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+//                Log.e(TAG, it[0].toString())
+//            }
+//
+//            onError = {
+//                Log.e(TAG, "onError doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+//            }
+//
+//            onComplete = {
+//                Log.e(TAG, "onComplete doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
+//            }
+//        }
+    }
+
+    fun doHttpRequest3() {
         request2<List<UserBean>> {
             //addLifecycle 来指定依赖的生命周期的对象
 //            addLifecycle = {}
 
-            start = {
+            start  {
                 Log.e(TAG, "start doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
 
-            loader = {
+            loader {
                 Log.e(TAG, "request doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
                 RetrofitHelper.getApi().getUserInfo()
             }
 
-            onSuccess = {
+            onSuccess {
                 Log.e(TAG, "onSuccess doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
                 Log.e(TAG, it[0].toString())
             }
 
-            onError = {
+            onError {
                 Log.e(TAG, "onError doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
 
-            onComplete = {
+            onComplete  {
                 Log.e(TAG, "onComplete doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
         }

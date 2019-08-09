@@ -34,6 +34,7 @@ class LifecycleMainPresenter : DefaultLifecycleObserver, LifecycleOwner {
      * LifecycleMainPresenter: onComplete doHttpRequest:currentThreadName:main
      */
     fun doHttpRequest() {
+        Log.e(TAG, "doHttpRequest:currentThreadName:${Thread.currentThread().name}")
         start {
             Log.e(TAG, "start doHttpRequest:currentThreadName:${Thread.currentThread().name}")
         }.request {
@@ -47,6 +48,7 @@ class LifecycleMainPresenter : DefaultLifecycleObserver, LifecycleOwner {
         }) {
             Log.e(TAG, "onComplete doHttpRequest:currentThreadName:${Thread.currentThread().name}")
         }
+        Log.e(TAG, "doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
     }
 
     /**
@@ -60,26 +62,25 @@ class LifecycleMainPresenter : DefaultLifecycleObserver, LifecycleOwner {
      */
     fun doHttpRequest2() {
         request2<List<UserBean>> {
-
-            start = {
+            start {
                 Log.e(TAG, "start doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
 
-            loader = {
+            loader {
                 Log.e(TAG, "request doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
                 RetrofitHelper.getApi().getUserInfo()
             }
 
-            onSuccess = {
+            onSuccess {
                 Log.e(TAG, "onSuccess doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
                 Log.e(TAG, it[0].toString())
             }
 
-            onError = {
+            onError {
                 Log.e(TAG, "onError doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
 
-            onComplete = {
+            onComplete {
                 Log.e(TAG, "onComplete doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
         }
