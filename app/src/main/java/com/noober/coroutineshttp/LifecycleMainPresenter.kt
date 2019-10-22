@@ -19,6 +19,11 @@ class LifecycleMainPresenter : DefaultLifecycleObserver, LifecycleOwner {
 
     override fun getLifecycle(): Lifecycle = lifecycleRegistry
 
+    override fun onCreate(owner: LifecycleOwner) {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+    }
+
+
     override fun onDestroy(owner: LifecycleOwner) {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         lifecycle.removeObserver(this)
