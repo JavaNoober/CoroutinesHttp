@@ -425,7 +425,7 @@ Request对象创建好了，里面放入的参数为方法参数，而不是实�
                     addLifecycle?.apply { lifecycle.addObserver(CoroutineLifecycleListener(deferred, lifecycle)) }
                     val result = deferred.await()
                     onSuccess?.invoke(result)
-                } catch (e: Exception) {
+                } catch (e: Exception) ~~{~~
                     e.printStackTrace()
                     when (e) {
                         is UnknownHostException -> onError?.invoke("network is error!")

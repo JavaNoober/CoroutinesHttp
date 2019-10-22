@@ -1,7 +1,10 @@
 package com.noober.coroutineshttp
 
 import android.util.Log
+import com.noober.coroutineshttp.coroutine.Request
+import com.noober.coroutineshttp.coroutine.Request3
 import com.noober.coroutineshttp.coroutine.request2
+import com.noober.coroutineshttp.coroutine.request3
 import com.noober.coroutineshttp.retrofit.RetrofitHelper
 import com.noober.coroutineshttp.retrofit.UserBean
 
@@ -29,6 +32,18 @@ class Test{
             onComplete {
                 Log.e(TAG, "onComplete doHttpRequest2:currentThreadName:${Thread.currentThread().name}")
             }
+        }
+
+        //step 1
+        val request = Request3<List<UserBean>>()
+        request.loader = {RetrofitHelper.getApi().getUserInfo()}
+        request.onSuccess = {}
+        request.request()
+        //step 2
+        request3<List<UserBean>> {
+            loader = {RetrofitHelper.getApi().getUserInfo()}
+
+            onSuccess = {}
         }
     }
 }

@@ -2,6 +2,10 @@ package com.noober.coroutineshttp
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
@@ -16,6 +20,19 @@ class MainActivity : AppCompatActivity() {
         lifecycleMainPresenter.doHttpRequest()
         mainPresenter.doHttpRequest3()
 //        Test().doHttp()
+
+
+        // do first: main
+        // do async: DefaultDispatcher-worker-5
+        // do end: main
+        GlobalScope.launch(Dispatchers.Main) {
+            println("do first: ${Thread.currentThread().name}")
+            GlobalScope.async(Dispatchers.Default) {
+                println("do async: ${Thread.currentThread().name}")
+            }.await()
+            println("do end: ${Thread.currentThread().name}")
+        }
+
     }
 
     override fun onDestroy() {
